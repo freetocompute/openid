@@ -1,6 +1,8 @@
 use chrono::{DateTime, Duration, Utc};
 use serde::{de::Visitor, ser::Serializer, Deserialize, Deserializer, Serialize};
 use std::fmt;
+extern crate chrono;
+use chrono::prelude::*;
 
 /// The bearer token type.
 ///
@@ -44,8 +46,17 @@ where
         where
             D: Deserializer<'de>,
         {
-            let expire_in: u64 = serde::de::Deserialize::deserialize(d)?;
-            Ok(Some(Utc::now() + Duration::seconds(expire_in as i64)))
+            let expire_in: i64 = serde::de::Deserialize::deserialize(d)?;
+            if expire_in > 31536000 {
+                let naive_datetime = NaiveDateTime::from_timestamp(expire_in, 0);
+                let datetime_again: DateTime<Utc> = DateTime::from_utc(naive_datetime, Utc);
+
+                let expr = datetime_again;
+                Ok(Some(expr))
+            } else {
+                let expr = Utc::now() + Duration::seconds(expire_in as i64);
+                Ok(Some(expr))
+            }
         }
     }
 
